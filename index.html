@@ -43,12 +43,30 @@
           <span id="dayLabel" class="badge soft">Day 1</span>
         </div>
         <div class="actions-grid">
-          <button class="action-btn" data-action="brew">煮咖啡 +1</button>
-          <button class="action-btn" data-action="bake">烤魚麵包 +1</button>
-          <button class="action-btn" data-action="pet">摸店貓</button>
-          <button class="action-btn" data-action="restock">補貨</button>
-          <button class="action-btn" data-action="promo">發限時貼文</button>
-          <button class="action-btn" data-action="nap">偷睡 10 分鐘</button>
+          <button class="action-btn" data-action="brew">
+            <span>煮咖啡 +1</span>
+            <div class="btn-progress"></div>
+          </button>
+          <button class="action-btn" data-action="bake">
+            <span>烤魚麵包 +1</span>
+            <div class="btn-progress"></div>
+          </button>
+          <button class="action-btn" data-action="pet">
+            <span>摸店貓</span>
+            <div class="btn-progress"></div>
+          </button>
+          <button class="action-btn" data-action="restock">
+            <span>補貨</span>
+            <div class="btn-progress"></div>
+          </button>
+          <button class="action-btn" data-action="promo">
+            <span>發限時貼文</span>
+            <div class="btn-progress"></div>
+          </button>
+          <button class="action-btn" data-action="nap">
+            <span>偷睡 10 分鐘</span>
+            <div class="btn-progress"></div>
+          </button>
         </div>
 
         <div class="resident-cats" id="residentCats"></div>
@@ -98,6 +116,17 @@
       <button class="serve-btn">送出餐點</button>
     </article>
   </template>
+
+  <div id="summaryModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h2 id="summaryTitle">今日營業結算</h2>
+      <div class="summary-stats" id="summaryStats"></div>
+      <p id="summaryMessage"></p>
+      <div class="modal-actions">
+        <button id="nextDayBtn" class="action-btn">開始下一天</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
