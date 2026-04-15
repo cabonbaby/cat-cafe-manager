@@ -84,8 +84,114 @@ const els = {
   logDrawer: document.getElementById('logDrawer'),
   shopDrawer: document.getElementById('shopDrawer'),
   toggleLogBtn: document.getElementById('toggleLogBtn'),
-  toggleShopBtn: document.getElementById('toggleShopBtn')
+  toggleShopBtn: document.getElementById('toggleShopBtn'),
+  // 像素劇場
+  pixelCanvas: document.getElementById('pixelCanvas')
 };
+
+/** 像素劇場引擎 **/
+const ctx = els.pixelCanvas.getContext('2d');
+const pixelState = {
+  cats: [], // { id, x, targetX, y, color, state: 'walking'|'waiting'|'leaving', tailAngle: 0 }
+  counterX: 40,
+  spawnX: 240,
+  exitX: -40
+};
+
+function initPixelScene() {
+  setInterval(updatePixelScene, 1000 / 30); // 30 FPS
+}
+
+function updatePixelScene() {
+  // 清理畫布
+  ctx.fillStyle = '#3a3a4a';
+  ctx.fillRect(0, 0, 240, 100);
+
+  // 繪製吧檯
+  ctx.fillStyle = '#6d4c41';
+  ctx.fillRect(0, 60, 45, 40);
+  ctx.fillStyle = '#8d6e63';
+  ctx.fillRect(0, 60, 45, 5);
+
+  // 繪製店長貓 (靜止在吧檯後)
+  drawPixelCat(15, 65, '#333', 0, true);
+
+  // 更新並繪製客貓
+  pixelState.cats.forEach((pCat, index) => {
+    // 根據在 queue 中的位置決定目標 X
+    if (pCat.state === 'waiting') {
+      const queueIndex = state.queue.findIndex(c => c.id === pCat.id);
+      if (queueIndex === -1) {
+        pCat.state = 'leaving';
+        pCat.targetX = pixelState.exitX;
+      } else {
+        pCat.targetX = pixelState.counterX + 25 + (queueIndex * 35);
+      }
+    }
+
+    // 移動邏輯
+    const speed = pCat.state === 'leaving' ? 3 : 1.5;
+    if (Math.abs(pCat.x - pCat.targetX) > 2) {
+      pCat.x += pCat.x < pCat.targetX ? speed : -speed;
+      pCat.tailAngle = Math.sin(Date.now() / 100) * 0.5;
+    } else if (pCat.state === 'walking') {
+      pCat.state = 'waiting';
+    } else if (pCat.state === 'leaving' && Math.abs(pCat.x - pixelState.exitX) < 5) {
+      // 移除走出去的貓
+      pCat.toRemove = true;
+    }
+
+    drawPixelCat(pCat.x, pCat.y, pCat.color, pCat.tailAngle, false);
+  });
+
+  pixelState.cats = pixelState.cats.filter(c => !c.toRemove);
+
+  // 同步遊戲 state 到像素 state (新增貓)
+  state.queue.forEach((customer) => {
+    if (!pixelState.cats.find(c => c.id === customer.id)) {
+      pixelState.cats.push({
+        id: customer.id,
+        x: pixelState.spawnX,
+        targetX: pixelState.spawnX,
+        y: 65,
+        color: ['#ffcc80', '#bcaaa4', '#eeeeee', '#90a4ae'][Math.floor(Math.random()*4)],
+        state: 'walking',
+        tailAngle: 0
+      });
+    }
+  });
+}
+
+function drawPixelCat(x, y, color, tailAngle, isChef) {
+  ctx.save();
+  ctx.translate(x, y);
+  if (isChef) ctx.scale(-1, 1); // 店長面向右
+
+  // 身體
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 18, 12);
+  
+  // 尾巴
+  ctx.save();
+  ctx.translate(18, 10);
+  ctx.rotate(tailAngle);
+  ctx.fillRect(0, -8, 4, 8);
+  ctx.restore();
+
+  // 頭
+  ctx.fillRect(-6, -6, 10, 10);
+  
+  // 耳朵
+  ctx.fillRect(-6, -10, 3, 4);
+  ctx.fillRect(1, -10, 3, 4);
+
+  // 眼睛
+  ctx.fillStyle = '#000';
+  ctx.fillRect(-4, -4, 2, 2);
+  ctx.fillRect(0, -4, 2, 2);
+
+  ctx.restore();
+}
 
 function toggleDrawer(drawer) {
   drawer.classList.toggle('hidden');
@@ -583,4 +689,5 @@ els.restartBtn.addEventListener('click', () => resetGame(true));
 els.nextDayBtn.addEventListener('click', () => resetGame(false));
 els.residentCats.innerHTML = RESIDENT_CATS.map(cat => `<article class="cat-card"><div class="cat-avatar">${cat.avatar}</div><h3>${cat.name}</h3><p>${cat.perk}</p></article>`).join('');
 
+initPixelScene();
 resetGame();
