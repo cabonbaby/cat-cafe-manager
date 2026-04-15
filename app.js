@@ -4,7 +4,10 @@ const CUSTOMER_POOL = [
   { name: '伯爵白襪', avatar: '🤍', quote: '咖啡配點小點心最棒。', order: { coffee: 1, bun: 1 }, reward: 32, rep: 16 },
   { name: '社恐黑貓', avatar: '🐈‍⬛', quote: '我想安靜坐窗邊。', order: { coffee: 2 }, reward: 34, rep: 18 },
   { name: '小橘店長粉', avatar: '🧡', quote: '今天也要看店貓表演！', order: { bun: 2 }, reward: 30, rep: 18 },
-  { name: '貴族布偶', avatar: '😺', quote: '請給我完整套餐，毛要蓬鬆。', order: { coffee: 2, bun: 1 }, reward: 48, rep: 24 }
+  { name: '貴族布偶', avatar: '😺', quote: '請給我完整套餐，毛要蓬鬆。', order: { coffee: 2, bun: 1 }, reward: 48, rep: 24 },
+  // 難度加強：複雜訂單
+  { name: '挑嘴暹羅', avatar: '👤', quote: '我只要新鮮的特調奶咖。', order: { coffee: 1, milk: 1 }, reward: 55, rep: 30, complex: true },
+  { name: '大胃王緬因', avatar: '🦁', quote: '夾魚的麵包才是極品。', order: { bun: 1, fish: 1 }, reward: 60, rep: 35, complex: true }
 ];
 
 const RESIDENT_CATS = [
@@ -182,7 +185,7 @@ function updatePixelScene() {
         const queueIndex = state.queue.findIndex(c => c.id === pCat.id);
         pCat.targetX = pixelState.counterX + 25 + (queueIndex * 35);
         pCat.patience = customer.patience;
-        pCat.orderIcon = customer.order.coffee ? '☕' : '🥐';
+        pCat.orderIcon = customer.order.coffee ? '☕' : (customer.order.bun ? '🥐' : '❓');
       }
     }
 
@@ -308,7 +311,8 @@ function saveGame() {
     helper: state.helper,
     decor: state.decor,
     vip: state.vip,
-    festival: state.festival
+    festival: state.festival,
+    rent: state.rent
   }));
 }
 
@@ -357,7 +361,9 @@ function resetGame(fullReset = false) {
     goal: 120,
     gameOver: false,
     todayCoins: 0,
-    todayOrders: 0
+    todayOrders: 0,
+    crisisTimer: 0,
+    rent: 40
   };
 
   Object.assign(state, baseState);
@@ -395,6 +401,7 @@ function gameTick() {
   state.petCooldown = Math.max(0, state.petCooldown - 1);
   state.nextCustomerAt -= 1;
   state.helperTick -= 1;
+  state.crisisTimer = Math.max(0, state.crisisTimer - 1);
 
   if (state.helper && state.helperTick <= 0) {
     state.coffee += 1;
@@ -420,13 +427,16 @@ function gameTick() {
   const impatient = state.queue.filter((customer) => customer.patience <= 0);
   if (impatient.length) {
     impatient.forEach((customer) => {
-      state.reputation = Math.max(0, state.reputation - 10);
-      addLog(`${customer.avatar} ${customer.name} 等太久離開了。`, '客人流失');
+      state.reputation = Math.max(0, state.reputation - 15);
+      addLog(`${customer.avatar} ${customer.name} 等太久離開了並留下負評。`, '評價危機');
+      // 負評危機：凍結新客人
+      state.crisisTimer = 12; 
+      setHeadline('糟糕！店裡出現了負評，大家暫時不敢進來了。');
     });
     state.queue = state.queue.filter((customer) => customer.patience > 0);
   }
 
-  if (state.nextCustomerAt <= 0) {
+  if (state.nextCustomerAt <= 0 && state.crisisTimer <= 0) {
     spawnCustomer();
   }
 
@@ -556,8 +566,9 @@ function finalizeAction(action, cost) {
       state.reputation += 8;
       state.queue.forEach(c => c.patience += 15);
       state.energy += 5;
+      state.crisisTimer = 0; // 摸摸貓可以解除評價危機
       showFloatingText(`摸摸 🐾`, centerX, centerY, '#ffb7b7');
-      addLog('🐾 摸摸店貓，大家都很開心。', '店貓互動');
+      addLog('🐾 摸摸店貓，化解了負評危機！', '公關應對');
       setHeadline('摸摸店貓讓大家心情變好，耐心也增加了。');
     },
     nap: () => {
@@ -604,10 +615,16 @@ function serveCustomer(id) {
   if (state.gameOver) return;
   const customer = state.queue.find((entry) => entry.id === id);
   if (!customer) return;
-  const need = { coffee: customer.order.coffee || 0, bun: customer.order.bun || 0 };
   
-  if (state.coffee < need.coffee || state.bun < need.bun) {
-    failAction(`庫存不足。`);
+  const need = { 
+    coffee: customer.order.coffee || 0, 
+    bun: customer.order.bun || 0,
+    milk: customer.order.milk || 0,
+    fish: customer.order.fish || 0
+  };
+  
+  if (state.coffee < need.coffee || state.bun < need.bun || state.milk < need.milk || state.fish < need.fish) {
+    failAction(`資源或預製品不足。`);
     return;
   }
 
@@ -618,6 +635,9 @@ function serveCustomer(id) {
 
   state.coffee -= need.coffee;
   state.bun -= need.bun;
+  state.milk -= need.milk;
+  state.fish -= need.fish;
+  
   const coinGain = customer.reward + (state.vip ? 8 : 0);
   state.coins += coinGain;
   state.todayCoins += coinGain;
@@ -652,23 +672,43 @@ function endDay() {
   state.gameOver = true;
   if (tickHandle) clearInterval(tickHandle);
   
+  // 1. 租金壓力
+  state.coins -= state.rent;
+  const isBankrupt = state.coins < 0;
+  
+  // 2. 鮮度損耗 (沒用完的材料過期)
+  const lostMilk = Math.floor(state.milk * 0.4);
+  const lostFish = Math.floor(state.fish * 0.4);
+  state.milk -= lostMilk;
+  state.fish -= lostFish;
+
   const reached = state.reputation >= state.goal;
-  els.summaryTitle.textContent = reached ? '🎊 今日營運大成功！' : '🌙 今日營業結束';
+  
+  if (isBankrupt) {
+    els.summaryTitle.textContent = '💸 店鋪破產...';
+    els.summaryMessage.textContent = `很遺憾，你無法支付今天的租金 ${state.rent} 金。咖啡店被迫倒閉。`;
+    els.nextDayBtn.textContent = '重新開始經營';
+    els.nextDayBtn.onclick = () => resetGame(true);
+  } else {
+    els.summaryTitle.textContent = reached ? '🎊 今日營運大成功！' : '🌙 今日營業結束';
+    els.summaryMessage.textContent = `今日付清租金 ${state.rent} 金。` + 
+      (lostMilk + lostFish > 0 ? ` 另外有 ${lostMilk} 份牛奶和 ${lostFish} 份魚肉過期丟棄了。` : '') +
+      (reached ? ` 你成功達成了 ${state.goal} 人氣目標！` : ` 你沒能達成 ${state.goal} 人氣目標。`);
+    
+    state.rent += 15; // 租金隨天數增加
+    state.day += 1;
+    els.nextDayBtn.textContent = '開始下一天';
+    els.nextDayBtn.onclick = () => resetGame(false);
+  }
   
   els.summaryStats.innerHTML = `
     <div class="summary-item"><label>今日營收</label><span>${state.todayCoins} 金</span></div>
+    <div class="summary-item"><label>支付租金</label><span>-${state.rent - 15} 金</span></div>
     <div class="summary-item"><label>服務貓數</label><span>${state.todayOrders} 位</span></div>
-    <div class="summary-item"><label>當前人氣</label><span>${state.reputation}</span></div>
-    <div class="summary-item"><label>累積資產</label><span>${state.coins} 金</span></div>
+    <div class="summary-item"><label>當前資產</label><span>${state.coins} 金</span></div>
   `;
   
-  els.summaryMessage.textContent = reached 
-    ? `你成功達成了 ${state.goal} 人氣目標！店裡的聲譽正穩定增長。`
-    : `雖然今天沒達到 ${state.goal} 人氣目標，但累積的經驗會讓明天更好。`;
-  
-  state.day += 1;
   saveGame();
-  
   els.summaryModal.classList.remove('hidden');
 }
 
@@ -752,9 +792,14 @@ function renderOrders() {
       card.querySelector('.order-quote').textContent = customer.quote;
       
       const tagsEl = card.querySelector('.order-tags');
-      tagsEl.innerHTML = (customer.order.coffee ? `<span class="tag">咖啡 x${customer.order.coffee}</span>` : '') +
-                         (customer.order.bun ? `<span class="tag">魚麵包 x${customer.order.bun}</span>` : '') +
-                         `<span class="tag">獎勵 ${customer.reward} 金</span>`;
+      let tagsHTML = '';
+      if (customer.order.coffee) tagsHTML += `<span class="tag">咖啡 x${customer.order.coffee}</span>`;
+      if (customer.order.bun) tagsHTML += `<span class="tag">魚麵包 x${customer.order.bun}</span>`;
+      if (customer.order.milk) tagsHTML += `<span class="tag">牛奶 x${customer.order.milk}</span>`;
+      if (customer.order.fish) tagsHTML += `<span class="tag">鮮魚 x${customer.order.fish}</span>`;
+      tagsHTML += `<span class="tag">獎勵 ${customer.reward} 金</span>`;
+      
+      tagsEl.innerHTML = tagsHTML;
       card.querySelector('.serve-btn').addEventListener('click', () => serveCustomer(customer.id));
       els.ordersList.appendChild(frag);
       
@@ -800,7 +845,7 @@ document.querySelectorAll('.action-btn').forEach((btn) => {
   els.nextDayBtn.addEventListener('click', () => resetGame(false));
   els.residentCats.innerHTML = RESIDENT_CATS.map(cat => `<article class="cat-card"><div class="cat-avatar">${cat.avatar}</div><h3>${cat.name}</h3><p>${cat.perk}</p></article>`).join('');
 
-  // --- 新增：像素劇場互動功能 ---
+  // --- 像素劇場互動功能 ---
   els.pixelCanvas.addEventListener('mousemove', (e) => {
     const rect = els.pixelCanvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (els.pixelCanvas.width / rect.width);
