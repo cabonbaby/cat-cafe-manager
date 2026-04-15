@@ -1,0 +1,15 @@
+[Unit]
+Description=App service for cat-cafe-manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/suker/projects/cat-cafe-manager
+ExecStart=/usr/bin/bash -lc 'cd /home/suker/projects/cat-cafe-manager && exec python3 -m http.server 4080'
+Restart=always
+RestartSec=5
+Environment=HOME=/home/suker
+
+[Install]
+WantedBy=default.target

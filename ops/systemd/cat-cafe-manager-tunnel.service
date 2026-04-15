@@ -1,0 +1,15 @@
+[Unit]
+Description=Quick Cloudflare tunnel for cat-cafe-manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/suker/projects/cat-cafe-manager
+ExecStart=/home/suker/projects/cat-cafe-manager/scripts/start_quick_tunnel.sh
+Restart=always
+RestartSec=5
+Environment=HOME=/home/suker
+
+[Install]
+WantedBy=default.target

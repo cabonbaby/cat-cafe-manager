@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>貓咪咖啡店店長</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Cozy Web Game Demo</p>
+        <h1>貓咪咖啡店店長</h1>
+        <p class="subtitle">一邊服務挑嘴貓客人，一邊把小小貓咖經營成街角明星店。</p>
+      </div>
+      <div class="hero-actions">
+        <button id="restartBtn" class="secondary">重新開店</button>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="panel stats-panel">
+        <div class="panel-title-row">
+          <h2>店內狀態</h2>
+          <span id="timerLabel" class="badge">08:00</span>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="progress-wrap">
+          <div class="progress-labels">
+            <span>今日人氣</span>
+            <span id="goalLabel">0 / 120</span>
+          </div>
+          <div class="progress-bar">
+            <div id="goalFill" class="progress-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel center-panel">
+        <div class="panel-title-row">
+          <h2>吧台動作</h2>
+          <span id="dayLabel" class="badge soft">Day 1</span>
+        </div>
+        <div class="actions-grid">
+          <button class="action-btn" data-action="brew">煮咖啡 +1</button>
+          <button class="action-btn" data-action="bake">烤魚麵包 +1</button>
+          <button class="action-btn" data-action="pet">摸店貓</button>
+          <button class="action-btn" data-action="restock">補貨</button>
+          <button class="action-btn" data-action="promo">發限時貼文</button>
+          <button class="action-btn" data-action="nap">偷睡 10 分鐘</button>
+        </div>
+
+        <div class="resident-cats" id="residentCats"></div>
+
+        <div class="message-card" id="headlineCard">
+          <h3>今日店長提示</h3>
+          <p id="headlineText">先煮幾杯咖啡，別讓第一批客人失望。</p>
+        </div>
+      </section>
+
+      <section class="panel orders-panel">
+        <div class="panel-title-row">
+          <h2>排隊中的貓客人</h2>
+          <span id="queueCount" class="badge warning">0 位</span>
+        </div>
+        <div id="ordersList" class="orders-list"></div>
+      </section>
+
+      <section class="panel upgrades-panel">
+        <div class="panel-title-row">
+          <h2>店內升級</h2>
+          <span class="badge">投資角落</span>
+        </div>
+        <div id="upgradesList" class="upgrades-list"></div>
+      </section>
+
+      <section class="panel log-panel">
+        <div class="panel-title-row">
+          <h2>店內日誌</h2>
+          <button id="muteBtn" class="secondary small">關閉音效文字</button>
+        </div>
+        <div id="logList" class="log-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="orderCardTemplate">
+    <article class="order-card">
+      <div class="order-top">
+        <div>
+          <h3 class="order-name"></h3>
+          <p class="order-quote"></p>
+        </div>
+        <span class="order-patience"></span>
+      </div>
+      <div class="order-tags"></div>
+      <button class="serve-btn">送出餐點</button>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

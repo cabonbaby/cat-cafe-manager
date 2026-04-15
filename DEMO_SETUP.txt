@@ -1,0 +1,30 @@
+Demo scaffold 已建立
+
+專案
+- /home/suker/projects/cat-cafe-manager
+
+本機 port
+- 4080
+
+已建立
+- runtime/cloudflared.log
+- scripts/start_quick_tunnel.sh
+- scripts/show_quick_tunnel_url.sh
+- scripts/install_user_services.sh
+- ops/systemd/cat-cafe-manager-tunnel.service
+- ops/systemd/cat-cafe-manager.service
+
+建議流程
+1. 確認你的 app 已經先在本機正常提供 http://127.0.0.1:4080
+2. 執行：
+   /home/suker/projects/cat-cafe-manager/scripts/install_user_services.sh
+3. 啟動 tunnel：
+   systemctl --user start cat-cafe-manager-tunnel.service
+4. 讀取網址：
+   /home/suker/projects/cat-cafe-manager/scripts/show_quick_tunnel_url.sh
+
+補充
+- quick tunnel 適合臨時 demo
+- 每次重新啟動，網址都可能改變
+- 如果之後要固定網址，可再升級成 named tunnel
+- cloudflared log 固定寫到：/home/suker/projects/cat-cafe-manager/runtime/cloudflared.log
