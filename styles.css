@@ -69,7 +69,7 @@ h1 {
 
 /* 抽屜觸發按鈕 */
 .drawer-trigger-wrap {
-  margin-top: auto;
+  margin-bottom: 8px;
 }
 
 .drawer-btn {
