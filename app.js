@@ -35,7 +35,7 @@ const ACTION_TIMES = {
 const state = {};
 let tickHandle = null;
 let audioTextEnabled = true;
-let activeActions = new Set();
+let isBusy = false; // 全域忙碌狀態
 
 const els = {
   statsGrid: document.getElementById('statsGrid'),
@@ -133,7 +133,7 @@ function resetGame(fullReset = false) {
   state.todayCoins = 0;
   state.todayOrders = 0;
   state.gameOver = false;
-  activeActions.clear();
+  isBusy = false; // 確保重置忙碌狀態
   
   // 清除所有進度條
   document.querySelectorAll('.btn-progress').forEach(el => el.style.width = '0%');
@@ -218,7 +218,7 @@ function spawnCustomer() {
 }
 
 function performAction(action) {
-  if (state.gameOver || activeActions.has(action)) return;
+  if (state.gameOver || isBusy) return;
 
   const costMap = {
     brew: { beans: 1, milk: 1 },
@@ -235,10 +235,13 @@ function performAction(action) {
   }
 
   // 開始動作
-  activeActions.add(action);
+  isBusy = true;
   const btn = document.querySelector(`.action-btn[data-action="${action}"]`);
   const progressEl = btn.querySelector('.btn-progress');
   const duration = ACTION_TIMES[action] * (state.energy <= 0 ? 2 : 1);
+  
+  // 禁用所有按鈕
+  render();
   
   let startTime = Date.now();
   
@@ -251,7 +254,7 @@ function performAction(action) {
       requestAnimationFrame(updateProgress);
     } else {
       finalizeAction(action, cost);
-      activeActions.delete(action);
+      isBusy = false;
       setTimeout(() => { progressEl.style.width = '0%'; }, 200);
       render();
     }
@@ -267,21 +270,25 @@ function finalizeAction(action, cost) {
       state.coffee += state.brewPower;
       state.energy -= 4;
       addLog(`☕ 煮好了 ${state.brewPower} 杯咖啡。`, '吧台');
+      setHeadline('香味飄出來了，附近客貓正在靠近。');
     },
     bake: () => {
       state.bun += state.bakePower;
       state.energy -= 3;
       addLog(`🥐 烤好了 ${state.bakePower} 份魚麵包。`, '廚房');
+      setHeadline('魚麵包出爐，幸福感上升。');
     },
     restock: () => {
       state.beans += 5; state.milk += 5; state.fish += 4; state.catnip += 1;
       addLog('📦 補貨完成。', '補貨');
+      setHeadline('材料充足，可以大顯身手。');
     },
     promo: () => {
       state.promoCooldown = 12;
       state.reputation += state.decor ? 25 : 15;
       state.energy -= 5;
       addLog('📣 宣傳大幅提升人氣。', '宣傳');
+      setHeadline('宣傳奏效，客人很快就會湧進來。');
     },
     pet: () => {
       state.petCooldown = 8;
@@ -289,15 +296,31 @@ function finalizeAction(action, cost) {
       state.queue.forEach(c => c.patience += 15);
       state.energy += 5;
       addLog('🐾 摸摸店貓，大家都很開心。', '店貓互動');
+      setHeadline('摸摸店貓讓大家心情變好，耐心也增加了。');
     },
     nap: () => {
       state.energy = clamp(state.energy + 30, 0, 100);
       advanceClock(20);
       addLog('😴 休息後體力充沛。', '休息');
+      setHeadline('精神百倍，準備迎接晚間客群。');
     }
   };
   logic[action]();
   saveGame();
+}
+
+function addLog(message, title = '消息') {
+  const prefix = audioTextEnabled ? '♪ ' : '';
+  state.logs.unshift({ id: crypto.randomUUID(), title, message: prefix + message });
+  state.logs = state.logs.slice(0, 18);
+}
+
+function setHeadline(text) {
+  els.headlineText.textContent = text;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function canAfford(costs) {
@@ -403,9 +426,11 @@ function render() {
   renderLog();
   
   document.querySelectorAll('.action-btn').forEach(btn => {
-    btn.disabled = state.gameOver || activeActions.has(btn.dataset.action);
-    if (btn.dataset.action === 'promo' && state.promoCooldown > 0) btn.disabled = true;
-    if (btn.dataset.action === 'pet' && state.petCooldown > 0) btn.disabled = true;
+    btn.disabled = state.gameOver || isBusy;
+    if (!isBusy) {
+      if (btn.dataset.action === 'promo' && state.promoCooldown > 0) btn.disabled = true;
+      if (btn.dataset.action === 'pet' && state.petCooldown > 0) btn.disabled = true;
+    }
   });
 }
 
@@ -434,9 +459,13 @@ function renderUpgrades() {
     const owned = state.upgrades.includes(upgrade.id);
     return `<article class="upgrade-card ${owned ? '' : 'locked'}">
       <div class="upgrade-top"><div><h3 class="upgrade-name">${upgrade.name}</h3><p class="upgrade-desc">${upgrade.desc}</p></div><span class="badge">${upgrade.cost} 金</span></div>
-      <button ${owned || state.coins < upgrade.cost ? 'disabled' : ''} onclick="buyUpgrade('${upgrade.id}')">${owned ? '已擁有' : '購買'}</button>
+      <button ${owned || state.coins < upgrade.cost ? 'disabled' : ''} data-upgrade="${upgrade.id}">${owned ? '已擁有' : '購買'}</button>
     </article>`;
   }).join('');
+
+  els.upgradesList.querySelectorAll('button[data-upgrade]').forEach(btn => {
+    btn.addEventListener('click', () => buyUpgrade(btn.dataset.upgrade));
+  });
 }
 
 function renderLog() {
