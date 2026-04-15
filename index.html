@@ -20,100 +20,107 @@
     </header>
 
     <main class="dashboard">
-      <section class="panel stats-panel">
-        <div class="panel-title-row">
-          <h2>店內狀態</h2>
-          <span id="timerLabel" class="badge">08:00</span>
-        </div>
-        <div class="stats-grid" id="statsGrid"></div>
-        <div class="progress-wrap">
-          <div class="progress-labels">
-            <span>今日人氣</span>
-            <span id="goalLabel">0 / 120</span>
+      <div class="col col-left">
+        <section class="panel stats-panel">
+          <div class="panel-title-row">
+            <h2>店內狀態</h2>
+            <span id="timerLabel" class="badge">08:00</span>
           </div>
-          <div class="progress-bar">
-            <div id="goalFill" class="progress-fill"></div>
+          <div class="stats-grid" id="statsGrid"></div>
+          <div class="progress-wrap">
+            <div class="progress-labels">
+              <span>今日人氣</span>
+              <span id="goalLabel">0 / 120</span>
+            </div>
+            <div class="progress-bar">
+              <div id="goalFill" class="progress-fill"></div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+        
+        <section class="panel log-panel">
+          <div class="panel-title-row">
+            <h2>店內日誌</h2>
+          </div>
+          <div id="logList" class="log-list"></div>
+        </section>
+      </div>
 
-      <section class="panel center-panel">
-        <div class="panel-title-row">
-          <h2>吧台動作</h2>
-          <span id="dayLabel" class="badge soft">Day 1</span>
-        </div>
-        <div class="actions-grid">
-          <button class="action-btn" data-action="brew">
-            <span>煮咖啡 +1</span>
-            <div class="btn-progress"></div>
-          </button>
-          <button class="action-btn" data-action="bake">
-            <span>烤魚麵包 +1</span>
-            <div class="btn-progress"></div>
-          </button>
-          <button class="action-btn" data-action="pet">
-            <span>摸店貓</span>
-            <div class="btn-progress"></div>
-          </button>
-          <button class="action-btn" data-action="restock">
-            <span>補貨</span>
-            <div class="btn-progress"></div>
-          </button>
-          <button class="action-btn" data-action="promo">
-            <span>發限時貼文</span>
-            <div class="btn-progress"></div>
-          </button>
-          <button class="action-btn" data-action="nap">
-            <span>偷睡 10 分鐘</span>
-            <div class="btn-progress"></div>
-          </button>
-        </div>
+      <div class="col col-center">
+        <section class="panel action-panel">
+          <div class="panel-title-row">
+            <h2>吧台動作</h2>
+            <span id="dayLabel" class="badge soft">Day 1</span>
+          </div>
+          <div class="actions-grid">
+            <button class="action-btn" data-action="brew">
+              <span>煮咖啡 +1</span>
+              <div class="btn-progress"></div>
+            </button>
+            <button class="action-btn" data-action="bake">
+              <span>烤魚麵包 +1</span>
+              <div class="btn-progress"></div>
+            </button>
+            <button class="action-btn" data-action="pet">
+              <span>摸店貓</span>
+              <div class="btn-progress"></div>
+            </button>
+            <button class="action-btn" data-action="restock">
+              <span>補貨</span>
+              <div class="btn-progress"></div>
+            </button>
+            <button class="action-btn" data-action="promo">
+              <span>發限時貼文</span>
+              <div class="btn-progress"></div>
+            </button>
+            <button class="action-btn" data-action="nap">
+              <span>偷睡 10 分鐘</span>
+              <div class="btn-progress"></div>
+            </button>
+          </div>
 
-        <div class="resident-cats" id="residentCats"></div>
+          <div class="resident-cats" id="residentCats"></div>
 
-        <div class="message-card" id="headlineCard">
-          <h3>今日店長提示</h3>
-          <p id="headlineText">先煮幾杯咖啡，別讓第一批客人失望。</p>
-        </div>
-      </section>
+          <div class="message-card" id="headlineCard">
+            <p id="headlineText">先煮幾杯咖啡，別讓第一批客人失望。</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="panel orders-panel">
-        <div class="panel-title-row">
-          <h2>排隊中的貓客人</h2>
-          <span id="queueCount" class="badge warning">0 位</span>
-        </div>
-        <div id="ordersList" class="orders-list"></div>
-      </section>
+      <div class="col col-right">
+        <section class="panel orders-panel">
+          <div class="panel-title-row">
+            <h2>排隊中</h2>
+            <span id="queueCount" class="badge warning">0 位</span>
+          </div>
+          <div id="ordersList" class="orders-list"></div>
+        </section>
+      </div>
 
-      <section class="panel upgrades-panel">
-        <div class="panel-title-row">
-          <h2>店內升級</h2>
-          <span class="badge">投資角落</span>
-        </div>
-        <div id="upgradesList" class="upgrades-list"></div>
-      </section>
-
-      <section class="panel log-panel">
-        <div class="panel-title-row">
-          <h2>店內日誌</h2>
-          <button id="muteBtn" class="secondary small">關閉音效文字</button>
-        </div>
-        <div id="logList" class="log-list"></div>
-      </section>
+      <div class="col col-shop">
+        <section class="panel upgrades-panel">
+          <div class="panel-title-row">
+            <h2>設備商店</h2>
+          </div>
+          <div id="upgradesList" class="upgrades-list"></div>
+        </section>
+      </div>
     </main>
   </div>
 
   <template id="orderCardTemplate">
-    <article class="order-card">
+    <article class="order-card slide-in">
       <div class="order-top">
         <div>
           <h3 class="order-name"></h3>
           <p class="order-quote"></p>
         </div>
-        <span class="order-patience"></span>
+      </div>
+      <div class="patience-wrap">
+        <div class="patience-bar"><div class="patience-fill"></div></div>
       </div>
       <div class="order-tags"></div>
-      <button class="serve-btn">送出餐點</button>
+      <button class="serve-btn">送餐</button>
     </article>
   </template>
 

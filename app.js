@@ -35,7 +35,29 @@ const ACTION_TIMES = {
 const state = {};
 let tickHandle = null;
 let audioTextEnabled = true;
-let isBusy = false; // 全域忙碌狀態
+let isBusy = false;
+
+// 輔助：顯示漂浮文字
+function showFloatingText(text, x, y, color = '#fde68a') {
+  const el = document.createElement('div');
+  el.className = 'floating-text';
+  el.textContent = text;
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  el.style.color = color;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+// 輔助：觸發元素彈跳特效
+function triggerPop(selector) {
+  const el = document.querySelector(selector);
+  if (el) {
+    el.classList.remove('pop-effect');
+    void el.offsetWidth;
+    el.classList.add('pop-effect');
+  }
+}
 
 const els = {
   statsGrid: document.getElementById('statsGrid'),
@@ -168,6 +190,16 @@ function gameTick() {
 
   state.queue.forEach((customer) => {
     customer.patience -= 5;
+    // 更新畫面上該客人的耐心條
+    const card = document.querySelector(`[data-customer-id="${customer.id}"]`);
+    if (card) {
+      const fill = card.querySelector('.patience-fill');
+      const pct = Math.max(0, customer.patience);
+      fill.style.width = `${pct}%`;
+      if (pct < 30) fill.style.backgroundColor = 'var(--danger)';
+      else if (pct < 60) fill.style.backgroundColor = 'var(--gold)';
+      else fill.style.backgroundColor = 'var(--mint)';
+    }
   });
 
   const impatient = state.queue.filter((customer) => customer.patience <= 0);
@@ -265,28 +297,42 @@ function performAction(action) {
 
 function finalizeAction(action, cost) {
   spend(cost);
+  
+  const btn = document.querySelector(`.action-btn[data-action="${action}"]`);
+  const rect = btn.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top;
+
   const logic = {
     brew: () => {
       state.coffee += state.brewPower;
       state.energy -= 4;
+      showFloatingText(`+${state.brewPower} ☕`, centerX, centerY, '#fff');
+      triggerPop('.stat-card:nth-child(2)');
       addLog(`☕ 煮好了 ${state.brewPower} 杯咖啡。`, '吧台');
       setHeadline('香味飄出來了，附近客貓正在靠近。');
     },
     bake: () => {
       state.bun += state.bakePower;
       state.energy -= 3;
+      showFloatingText(`+${state.bakePower} 🥐`, centerX, centerY, '#fff');
+      triggerPop('.stat-card:nth-child(3)');
       addLog(`🥐 烤好了 ${state.bakePower} 份魚麵包。`, '廚房');
       setHeadline('魚麵包出爐，幸福感上升。');
     },
     restock: () => {
       state.beans += 5; state.milk += 5; state.fish += 4; state.catnip += 1;
+      showFloatingText(`補貨成功 📦`, centerX, centerY, '#fff');
       addLog('📦 補貨完成。', '補貨');
       setHeadline('材料充足，可以大顯身手。');
     },
     promo: () => {
       state.promoCooldown = 12;
-      state.reputation += state.decor ? 25 : 15;
+      const gain = state.decor ? 25 : 15;
+      state.reputation += gain;
       state.energy -= 5;
+      showFloatingText(`+${gain} 人氣 📣`, centerX, centerY, '#fde68a');
+      triggerPop('.stat-card:nth-child(7)');
       addLog('📣 宣傳大幅提升人氣。', '宣傳');
       setHeadline('宣傳奏效，客人很快就會湧進來。');
     },
@@ -295,12 +341,14 @@ function finalizeAction(action, cost) {
       state.reputation += 8;
       state.queue.forEach(c => c.patience += 15);
       state.energy += 5;
+      showFloatingText(`摸摸 🐾`, centerX, centerY, '#ffb7b7');
       addLog('🐾 摸摸店貓，大家都很開心。', '店貓互動');
       setHeadline('摸摸店貓讓大家心情變好，耐心也增加了。');
     },
     nap: () => {
       state.energy = clamp(state.energy + 30, 0, 100);
       advanceClock(20);
+      showFloatingText(`Zzz... 😴`, centerX, centerY, '#a78bfa');
       addLog('😴 休息後體力充沛。', '休息');
       setHeadline('精神百倍，準備迎接晚間客群。');
     }
@@ -347,6 +395,11 @@ function serveCustomer(id) {
     failAction(`庫存不足。`);
     return;
   }
+
+  const card = document.querySelector(`[data-customer-id="${id}"]`);
+  const rect = card.getBoundingClientRect();
+  showFloatingText(`+${customer.reward} 💰`, rect.left + rect.width / 2, rect.top, '#ffd700');
+  triggerPop('.stat-card:nth-child(1)');
 
   state.coffee -= need.coffee;
   state.bun -= need.bun;
@@ -439,18 +492,47 @@ function renderOrders() {
     els.ordersList.innerHTML = '<div class="empty">目前沒有客貓。</div>';
     return;
   }
-  els.ordersList.innerHTML = '';
+  
+  // 找出目前 DOM 中已存在的卡片 ID
+  const existingIds = Array.from(els.ordersList.querySelectorAll('[data-customer-id]'))
+    .map(el => el.dataset.customerId);
+  
+  // 移除已經不在 queue 裡的卡片
+  existingIds.forEach(id => {
+    if (!state.queue.find(c => c.id === id)) {
+      const el = els.ordersList.querySelector(`[data-customer-id="${id}"]`);
+      if (el) el.remove();
+    }
+  });
+
   state.queue.forEach((customer) => {
-    const frag = els.orderCardTemplate.content.cloneNode(true);
-    frag.querySelector('.order-name').textContent = `${customer.avatar} ${customer.name}`;
-    frag.querySelector('.order-quote').textContent = customer.quote;
-    frag.querySelector('.order-patience').textContent = `耐心 ${customer.patience}`;
-    const tagsEl = frag.querySelector('.order-tags');
-    tagsEl.innerHTML = (customer.order.coffee ? `<span class="tag">咖啡 x${customer.order.coffee}</span>` : '') +
-                       (customer.order.bun ? `<span class="tag">魚麵包 x${customer.order.bun}</span>` : '') +
-                       `<span class="tag">獎勵 ${customer.reward} 金</span>`;
-    frag.querySelector('.serve-btn').addEventListener('click', () => serveCustomer(customer.id));
-    els.ordersList.appendChild(frag);
+    let card = els.ordersList.querySelector(`[data-customer-id="${customer.id}"]`);
+    
+    if (!card) {
+      const frag = els.orderCardTemplate.content.cloneNode(true);
+      card = frag.querySelector('.order-card');
+      card.dataset.customerId = customer.id;
+      card.querySelector('.order-name').textContent = `${customer.avatar} ${customer.name}`;
+      card.querySelector('.order-quote').textContent = customer.quote;
+      
+      const tagsEl = card.querySelector('.order-tags');
+      tagsEl.innerHTML = (customer.order.coffee ? `<span class="tag">咖啡 x${customer.order.coffee}</span>` : '') +
+                         (customer.order.bun ? `<span class="tag">魚麵包 x${customer.order.bun}</span>` : '') +
+                         `<span class="tag">獎勵 ${customer.reward} 金</span>`;
+      card.querySelector('.serve-btn').addEventListener('click', () => serveCustomer(customer.id));
+      els.ordersList.appendChild(frag);
+      
+      // 重新取得剛剛 append 進去的 card
+      card = els.ordersList.querySelector(`[data-customer-id="${customer.id}"]`);
+    }
+
+    // 更新進度條樣式
+    const fill = card.querySelector('.patience-fill');
+    const pct = Math.max(0, customer.patience);
+    fill.style.width = `${pct}%`;
+    if (pct < 30) fill.style.backgroundColor = 'var(--danger)';
+    else if (pct < 60) fill.style.backgroundColor = 'var(--gold)';
+    else fill.style.backgroundColor = 'var(--mint)';
   });
 }
 
