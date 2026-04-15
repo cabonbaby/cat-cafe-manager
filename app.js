@@ -107,46 +107,64 @@ function updatePixelScene() {
   ctx.fillStyle = '#3a3a4a';
   ctx.fillRect(0, 0, 240, 100);
 
+  // 晝夜遮罩 (簡單疊加一層透明色)
+  const hour = Math.floor(state.minutes / 60);
+  if (hour >= 18 || hour < 8) {
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.3)';
+    ctx.fillRect(0, 0, 240, 100);
+  }
+
   // 繪製吧檯
   ctx.fillStyle = '#6d4c41';
   ctx.fillRect(0, 60, 45, 40);
   ctx.fillStyle = '#8d6e63';
   ctx.fillRect(0, 60, 45, 5);
 
-  // 繪製店長貓 (靜止在吧檯後)
+  // 繪製店長貓
   drawPixelCat(15, 65, '#333', 0, true);
 
   // 更新並繪製客貓
-  pixelState.cats.forEach((pCat, index) => {
-    // 根據在 queue 中的位置決定目標 X
+  pixelState.cats.forEach((pCat) => {
+    const customer = state.queue.find(c => c.id === pCat.id);
+    
     if (pCat.state === 'waiting') {
-      const queueIndex = state.queue.findIndex(c => c.id === pCat.id);
-      if (queueIndex === -1) {
+      if (!customer) {
         pCat.state = 'leaving';
         pCat.targetX = pixelState.exitX;
+        pCat.mood = pCat.served ? 'happy' : 'angry';
       } else {
+        const queueIndex = state.queue.findIndex(c => c.id === pCat.id);
         pCat.targetX = pixelState.counterX + 25 + (queueIndex * 35);
+        pCat.patience = customer.patience;
+        pCat.orderIcon = customer.order.coffee ? '☕' : '🥐';
       }
     }
 
     // 移動邏輯
-    const speed = pCat.state === 'leaving' ? 3 : 1.5;
+    const speed = pCat.state === 'leaving' ? 3.5 : 1.8;
     if (Math.abs(pCat.x - pCat.targetX) > 2) {
       pCat.x += pCat.x < pCat.targetX ? speed : -speed;
-      pCat.tailAngle = Math.sin(Date.now() / 100) * 0.5;
+      pCat.tailAngle = Math.sin(Date.now() / 100) * 0.6;
     } else if (pCat.state === 'walking') {
       pCat.state = 'waiting';
     } else if (pCat.state === 'leaving' && Math.abs(pCat.x - pixelState.exitX) < 5) {
-      // 移除走出去的貓
       pCat.toRemove = true;
     }
 
     drawPixelCat(pCat.x, pCat.y, pCat.color, pCat.tailAngle, false);
+    
+    // 繪製願望泡泡或心情
+    if (pCat.state === 'waiting') {
+      const mood = pCat.patience < 30 ? 'angry' : 'normal';
+      drawMoodBubble(pCat.x + 5, pCat.y - 15, pCat.orderIcon, mood);
+    } else if (pCat.state === 'leaving') {
+      drawMoodBubble(pCat.x + 5, pCat.y - 15, pCat.mood === 'happy' ? '❤️' : '💢', 'normal');
+    }
   });
 
   pixelState.cats = pixelState.cats.filter(c => !c.toRemove);
 
-  // 同步遊戲 state 到像素 state (新增貓)
+  // 同步新增貓
   state.queue.forEach((customer) => {
     if (!pixelState.cats.find(c => c.id === customer.id)) {
       pixelState.cats.push({
@@ -156,10 +174,36 @@ function updatePixelScene() {
         y: 65,
         color: ['#ffcc80', '#bcaaa4', '#eeeeee', '#90a4ae'][Math.floor(Math.random()*4)],
         state: 'walking',
-        tailAngle: 0
+        tailAngle: 0,
+        served: false,
+        mood: 'normal'
       });
     }
   });
+}
+
+function drawMoodBubble(x, y, icon, mood) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // 泡泡背景
+  ctx.fillStyle = mood === 'angry' ? '#ffcdd2' : '#fff';
+  ctx.beginPath();
+  ctx.roundRect(-10, -10, 20, 16, 4);
+  ctx.fill();
+
+  // 泡泡尖角
+  ctx.beginPath();
+  ctx.moveTo(-2, 6); ctx.lineTo(2, 6); ctx.lineTo(0, 10);
+  ctx.fill();
+
+  // 圖示文字
+  ctx.fillStyle = '#000';
+  ctx.font = '12px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(icon, 0, 2);
+
+  ctx.restore();
 }
 
 function drawPixelCat(x, y, color, tailAngle, isChef) {
@@ -534,6 +578,11 @@ function serveCustomer(id) {
   state.todayOrders += 1;
   state.reputation += Math.round(customer.rep * (state.decor ? 1.2 : 1));
   state.energy -= 2;
+  
+  // 標記像素貓已送餐
+  const pCat = pixelState.cats.find(c => c.id === id);
+  if (pCat) pCat.served = true;
+
   state.queue = state.queue.filter((entry) => entry.id !== id);
 
   addLog(`${customer.avatar} 已服務，獲得 ${coinGain} 金。`, '完成訂單');
@@ -577,7 +626,23 @@ function endDay() {
   els.summaryModal.classList.remove('hidden');
 }
 
+function updateTheme() {
+  const hour = Math.floor(state.minutes / 60);
+  const body = document.body;
+  
+  let theme = 'theme-morning';
+  if (hour >= 12 && hour < 17) theme = 'theme-afternoon';
+  else if (hour >= 17 && hour < 20) theme = 'theme-evening';
+  else if (hour >= 20 || hour < 8) theme = 'theme-night';
+
+  if (!body.classList.contains(theme)) {
+    body.classList.remove('theme-morning', 'theme-afternoon', 'theme-evening', 'theme-night');
+    body.classList.add(theme);
+  }
+}
+
 function render() {
+  updateTheme();
   const stats = [
     ['金幣', `${state.coins}`],
     ['咖啡庫存', `${state.coffee}`],

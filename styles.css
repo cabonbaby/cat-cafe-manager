@@ -18,9 +18,39 @@ body {
   min-height: 100vh;
   font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   color: var(--ink);
-  background:
-    radial-gradient(circle at top left, rgba(255,255,255,0.7), transparent 30%),
-    linear-gradient(180deg, #f6e4d5 0%, #f8f2ea 35%, #f4ecdf 100%);
+  transition: background 2s ease, color 1s ease;
+  background-color: var(--bg);
+  background-image: 
+    radial-gradient(circle at top left, rgba(255,255,255,0.4), transparent 40%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--bg) 50%, var(--sky-bottom) 100%);
+}
+
+/* 晝夜系統主題 */
+body.theme-morning {
+  --bg: #f8f2ea;
+  --sky-top: #e0f2fe;
+  --sky-bottom: #fef3c7;
+}
+
+body.theme-afternoon {
+  --bg: #fdf6e3;
+  --sky-top: #bae6fd;
+  --sky-bottom: #fed7aa;
+}
+
+body.theme-evening {
+  --bg: #f5ebe0;
+  --sky-top: #ddd6fe;
+  --sky-bottom: #fda4af;
+}
+
+body.theme-night {
+  --bg: #1e293b;
+  --ink: #e2e8f0;
+  --sky-top: #0f172a;
+  --sky-bottom: #334155;
+  --subtle: #94a3b8;
+  --panel: rgba(30, 41, 59, 0.8);
 }
 
 .page-shell {
