@@ -425,7 +425,7 @@ function render() {
   renderUpgrades();
   renderLog();
   
-  document.querySelectorAll('.action-btn').forEach(btn => {
+  document.querySelectorAll('.actions-grid .action-btn').forEach(btn => {
     btn.disabled = state.gameOver || isBusy;
     if (!isBusy) {
       if (btn.dataset.action === 'promo' && state.promoCooldown > 0) btn.disabled = true;
