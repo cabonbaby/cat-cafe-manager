@@ -750,9 +750,48 @@ document.querySelectorAll('.action-btn').forEach((btn) => {
   btn.addEventListener('click', () => performAction(btn.dataset.action));
 });
 
-els.restartBtn.addEventListener('click', () => resetGame(true));
-els.nextDayBtn.addEventListener('click', () => resetGame(false));
-els.residentCats.innerHTML = RESIDENT_CATS.map(cat => `<article class="cat-card"><div class="cat-avatar">${cat.avatar}</div><h3>${cat.name}</h3><p>${cat.perk}</p></article>`).join('');
+  els.restartBtn.addEventListener('click', () => resetGame(true));
+  els.nextDayBtn.addEventListener('click', () => resetGame(false));
+  els.residentCats.innerHTML = RESIDENT_CATS.map(cat => `<article class=\"cat-card\"><div class=\"cat-avatar\">${cat.avatar}</div><h3>${cat.name}</h3><p>${cat.perk}</p></article>`).join('');
 
-initPixelScene();
-resetGame();
+  // --- 新增：像素劇場互動功能 ---
+  els.pixelCanvas.addEventListener('mousemove', (e) => {
+    const rect = els.pixelCanvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (els.pixelCanvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (els.pixelCanvas.height / rect.height);
+    
+    // 檢查游標下是否有貓
+    const hoveredCat = pixelState.cats.find(c => 
+      c.state === 'waiting' && Math.abs(x - (c.x + 8)) < 15 && Math.abs(y - 70) < 20
+    );
+    els.pixelCanvas.style.cursor = hoveredCat ? 'pointer' : 'default';
+  });
+
+  els.pixelCanvas.addEventListener('click', (e) => {
+    const rect = els.pixelCanvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (els.pixelCanvas.width / rect.width);
+    
+    const clickedCat = pixelState.cats.find(c => 
+      c.state === 'waiting' && Math.abs(x - (c.x + 8)) < 15
+    );
+
+    if (clickedCat) {
+      // 點擊特效
+      createClickRipple(e.clientX - rect.left, e.clientY - rect.top);
+      // 執行送餐
+      serveCustomer(clickedCat.id);
+    }
+  });
+
+  function createClickRipple(x, y) {
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple-effect';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    els.pixelCanvas.parentElement.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  }
+  // ---------------------------
+
+  initPixelScene();
+  resetGame();
