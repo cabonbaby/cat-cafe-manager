@@ -79,8 +79,27 @@ const els = {
   summaryTitle: document.getElementById('summaryTitle'),
   summaryStats: document.getElementById('summaryStats'),
   summaryMessage: document.getElementById('summaryMessage'),
-  nextDayBtn: document.getElementById('nextDayBtn')
+  nextDayBtn: document.getElementById('nextDayBtn'),
+  // 抽屜相關
+  logDrawer: document.getElementById('logDrawer'),
+  shopDrawer: document.getElementById('shopDrawer'),
+  toggleLogBtn: document.getElementById('toggleLogBtn'),
+  toggleShopBtn: document.getElementById('toggleShopBtn')
 };
+
+function toggleDrawer(drawer) {
+  drawer.classList.toggle('hidden');
+}
+
+// 事件綁定
+els.toggleLogBtn.addEventListener('click', () => toggleDrawer(els.logDrawer));
+els.toggleShopBtn.addEventListener('click', () => toggleDrawer(els.shopDrawer));
+
+document.querySelectorAll('.close-drawer').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.target.closest('.drawer').classList.add('hidden');
+  });
+});
 
 function saveGame() {
   localStorage.setItem('catCafeSave', JSON.stringify({

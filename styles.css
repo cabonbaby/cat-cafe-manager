@@ -63,8 +63,80 @@ h1 {
   grid-template-columns: 260px 1fr 300px;
   gap: 16px;
   height: calc(100vh - 160px);
-  min-height: 500px;
+  min-height: 480px;
   overflow: hidden;
+}
+
+/* 抽屜觸發按鈕 */
+.drawer-trigger-wrap {
+  margin-top: auto;
+}
+
+.drawer-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid rgba(120, 82, 57, 0.15);
+  color: var(--subtle);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawer-btn:hover {
+  background: var(--panel-2);
+  transform: translateY(-2px);
+}
+
+.drawer-btn.primary {
+  background: var(--accent);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 10px 20px rgba(217, 143, 112, 0.25);
+}
+
+/* 抽屜系統 */
+.drawer {
+  position: fixed;
+  top: 0;
+  width: 320px;
+  height: 100%;
+  background: var(--panel);
+  backdrop-filter: blur(15px);
+  z-index: 2000;
+  box-shadow: 0 0 50px rgba(0,0,0,0.15);
+  transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.drawer-left { left: 0; transform: translateX(-100%); border-radius: 0 32px 32px 0; }
+.drawer-right { right: 0; transform: translateX(100%); border-radius: 32px 0 0 32px; }
+
+.drawer:not(.hidden) { transform: translateX(0); }
+
+.drawer-content {
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.drawer-header h2 { margin: 0; font-size: 1.4rem; }
+
+.close-drawer {
+  background: rgba(120, 82, 57, 0.1);
+  border: 0;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
 .col {
@@ -84,17 +156,13 @@ h1 {
   backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 重要：允許 flex 子元素縮小 */
+  min-height: 0;
 }
 
 /* 垂直分配空間 */
 .stats-panel { flex-shrink: 0; }
-.log-panel { flex-grow: 1; }
-
 .action-panel { flex-grow: 1; }
-
-.orders-panel { flex: 1.2; }
-.upgrades-panel { flex: 1; }
+.orders-panel { flex-grow: 1; }
 
 .log-list, .orders-list, .upgrades-list {
   flex-grow: 1;

@@ -38,12 +38,9 @@
           </div>
         </section>
         
-        <section class="panel log-panel">
-          <div class="panel-title-row">
-            <h2>店內日誌</h2>
-          </div>
-          <div id="logList" class="log-list"></div>
-        </section>
+        <div class="drawer-trigger-wrap">
+          <button id="toggleLogBtn" class="drawer-btn">📖 查看經營日誌</button>
+        </div>
       </div>
 
       <div class="col col-center">
@@ -96,14 +93,33 @@
           <div id="ordersList" class="orders-list"></div>
         </section>
 
-        <section class="panel upgrades-panel">
-          <div class="panel-title-row">
-            <h2>設備商店</h2>
-          </div>
-          <div id="upgradesList" class="upgrades-list"></div>
-        </section>
+        <div class="drawer-trigger-wrap">
+          <button id="toggleShopBtn" class="drawer-btn primary">🛒 設備商店</button>
+        </div>
       </div>
     </main>
+
+    <!-- 隱藏抽屜：日誌 -->
+    <div id="logDrawer" class="drawer drawer-left hidden">
+      <div class="drawer-content">
+        <div class="drawer-header">
+          <h2>經營日誌</h2>
+          <button class="close-drawer">關閉</button>
+        </div>
+        <div id="logList" class="log-list"></div>
+      </div>
+    </div>
+
+    <!-- 隱藏抽屜：商店 -->
+    <div id="shopDrawer" class="drawer drawer-right hidden">
+      <div class="drawer-content">
+        <div class="drawer-header">
+          <h2>設備商店</h2>
+          <button class="close-drawer">關閉</button>
+        </div>
+        <div id="upgradesList" class="upgrades-list"></div>
+      </div>
+    </div>
   </div>
 
   <template id="orderCardTemplate">
