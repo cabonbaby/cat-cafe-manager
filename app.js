@@ -91,7 +91,9 @@ const els = {
   // 像素劇場
   pixelCanvas: document.getElementById('pixelCanvas'),
   // BGM
-  bgmBtn: document.getElementById('bgmBtn')
+  bgmBtn: document.getElementById('bgmBtn'),
+  // 暫停
+  pauseBtn: document.getElementById('pauseBtn')
 };
 
 // YouTube BGM 系統
@@ -138,6 +140,17 @@ function toggleBGM() {
   bgmPlaying = !bgmPlaying;
 }
 
+function togglePause() {
+  if (state.gameOver) return;
+  state.isPaused = !state.isPaused;
+  els.pauseBtn.textContent = state.isPaused ? '▶️ 繼續' : '⏸️ 暫停';
+  if (state.isPaused) {
+    setHeadline('遊戲已暫停。');
+  } else {
+    setHeadline('遊戲繼續！加油，店長！');
+  }
+}
+
 /** 像素劇場引擎 **/
 const ctx = els.pixelCanvas.getContext('2d');
 const pixelState = {
@@ -152,6 +165,7 @@ function initPixelScene() {
 }
 
 function updatePixelScene() {
+  if (state.isPaused) return;
   // 清理畫布
   ctx.fillStyle = '#3a3a4a';
   ctx.fillRect(0, 0, 240, 100);
@@ -363,7 +377,8 @@ function resetGame(fullReset = false) {
     todayCoins: 0,
     todayOrders: 0,
     crisisTimer: 0,
-    rent: 40
+    rent: 40,
+    isPaused: false
   };
 
   Object.assign(state, baseState);
@@ -394,7 +409,7 @@ function startLoop() {
 }
 
 function gameTick() {
-  if (state.gameOver) return;
+  if (state.gameOver || state.isPaused) return;
   advanceClock(5); // 每一秒遊戲內經過 5 分鐘
   state.energy = clamp(state.energy - 0.5, 0, 100);
   state.promoCooldown = Math.max(0, state.promoCooldown - 1);
@@ -475,7 +490,7 @@ function spawnCustomer() {
 }
 
 function performAction(action) {
-  if (state.gameOver || isBusy) return;
+  if (state.gameOver || isBusy || state.isPaused) return;
 
   const costMap = {
     brew: { beans: 1, milk: 1 },
@@ -503,6 +518,11 @@ function performAction(action) {
   let startTime = Date.now();
   
   const updateProgress = () => {
+    if (state.isPaused) {
+      startTime = Date.now() - (progressEl.style.width ? (parseFloat(progressEl.style.width) / 100 * duration) : 0);
+      requestAnimationFrame(updateProgress);
+      return;
+    }
     let elapsed = Date.now() - startTime;
     let pct = Math.min(100, (elapsed / duration) * 100);
     progressEl.style.width = `${pct}%`;
@@ -612,7 +632,7 @@ function failAction(reason) {
 }
 
 function serveCustomer(id) {
-  if (state.gameOver) return;
+  if (state.gameOver || state.isPaused) return;
   const customer = state.queue.find((entry) => entry.id === id);
   if (!customer) return;
   
@@ -729,6 +749,8 @@ function updateTheme() {
 
 function render() {
   updateTheme();
+  
+  // 處理暫停時的按鈕狀態
   const stats = [
     ['金幣', `${state.coins}`],
     ['咖啡庫存', `${state.coffee}`],
@@ -755,8 +777,8 @@ function render() {
   renderLog();
   
   document.querySelectorAll('.actions-grid .action-btn').forEach(btn => {
-    btn.disabled = state.gameOver || isBusy;
-    if (!isBusy) {
+    btn.disabled = state.gameOver || isBusy || state.isPaused;
+    if (!isBusy && !state.isPaused) {
       if (btn.dataset.action === 'promo' && state.promoCooldown > 0) btn.disabled = true;
       if (btn.dataset.action === 'pet' && state.petCooldown > 0) btn.disabled = true;
     }
@@ -886,5 +908,6 @@ document.querySelectorAll('.action-btn').forEach((btn) => {
 
   initPixelScene();
   els.bgmBtn.addEventListener('click', toggleBGM);
+  els.pauseBtn.addEventListener('click', togglePause);
   initBGM();
   resetGame();
