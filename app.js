@@ -86,8 +86,54 @@ const els = {
   toggleLogBtn: document.getElementById('toggleLogBtn'),
   toggleShopBtn: document.getElementById('toggleShopBtn'),
   // 像素劇場
-  pixelCanvas: document.getElementById('pixelCanvas')
+  pixelCanvas: document.getElementById('pixelCanvas'),
+  // BGM
+  bgmBtn: document.getElementById('bgmBtn')
 };
+
+// YouTube BGM 系統
+let ytPlayer = null;
+let bgmPlaying = false;
+
+function initBGM() {
+  // 載入 YouTube API
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  const firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+}
+
+// YouTube API 回呼 (全域)
+window.onYouTubeIframeAPIReady = function() {
+  ytPlayer = new YT.Player('youtube-player', {
+    height: '0',
+    width: '0',
+    videoId: 'bUQn_VttFe4', // 使用者提供的歌曲 ID
+    playerVars: {
+      'autoplay': 0,
+      'loop': 1,
+      'playlist': 'bUQn_VttFe4' // 循環播放需要設定 playlist
+    },
+    events: {
+      'onReady': (event) => {
+        event.target.setVolume(40); // 預設音量 40%
+      }
+    }
+  });
+};
+
+function toggleBGM() {
+  if (!ytPlayer || typeof ytPlayer.playVideo !== 'function') return;
+
+  if (bgmPlaying) {
+    ytPlayer.pauseVideo();
+    els.bgmBtn.textContent = '🎵 BGM: 關閉';
+  } else {
+    ytPlayer.playVideo();
+    els.bgmBtn.textContent = '🎵 BGM: 播放中';
+  }
+  bgmPlaying = !bgmPlaying;
+}
 
 /** 像素劇場引擎 **/
 const ctx = els.pixelCanvas.getContext('2d');
@@ -752,7 +798,7 @@ document.querySelectorAll('.action-btn').forEach((btn) => {
 
   els.restartBtn.addEventListener('click', () => resetGame(true));
   els.nextDayBtn.addEventListener('click', () => resetGame(false));
-  els.residentCats.innerHTML = RESIDENT_CATS.map(cat => `<article class=\"cat-card\"><div class=\"cat-avatar\">${cat.avatar}</div><h3>${cat.name}</h3><p>${cat.perk}</p></article>`).join('');
+  els.residentCats.innerHTML = RESIDENT_CATS.map(cat => `<article class="cat-card"><div class="cat-avatar">${cat.avatar}</div><h3>${cat.name}</h3><p>${cat.perk}</p></article>`).join('');
 
   // --- 新增：像素劇場互動功能 ---
   els.pixelCanvas.addEventListener('mousemove', (e) => {
@@ -794,4 +840,6 @@ document.querySelectorAll('.action-btn').forEach((btn) => {
   // ---------------------------
 
   initPixelScene();
+  els.bgmBtn.addEventListener('click', toggleBGM);
+  initBGM();
   resetGame();

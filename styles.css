@@ -59,6 +59,19 @@ body.theme-night {
   padding: 24px;
 }
 
+.hero-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#youtube-player {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  pointer-events: none;
+}
+
 .hero {
   display: flex;
   justify-content: space-between;
