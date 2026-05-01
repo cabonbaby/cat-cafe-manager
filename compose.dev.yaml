@@ -1,0 +1,12 @@
+services:
+  app:
+    image: nginx:alpine
+    container_name: cat-cafe-manager
+    ports:
+      - "127.0.0.1:8888:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./app.js:/usr/share/nginx/html/app.js:ro
+      - ./styles.css:/usr/share/nginx/html/styles.css:ro
+      - ./scripts:/usr/share/nginx/html/scripts:ro
+    restart: unless-stopped
